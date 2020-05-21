@@ -5,7 +5,7 @@ from scipy.integrate import trapz, solve_ivp, odeint
 from scipy.interpolate import interp1d
 
 from util import load_csv, load_cross_section
-from aux import pressure, maxwellian_flux_speed, u_B, A_eff, A_eff_1, SIGMA_I, R_ind
+from aux import pressure, maxwellian_flux_speed, u_B, A_eff, A_eff_1, SIGMA_I, R_ind, h_L
 
 class GlobalModel:
 
@@ -70,6 +70,7 @@ class GlobalModel:
 
         # Ions
         self.beta_i = config_dict['beta_i']
+        self.V_beam = config_dict['V_beam']
 
         # Electrical
         self.omega = config_dict['omega']
@@ -96,6 +97,29 @@ class GlobalModel:
 
     @property
     def A(self): return 2*pi*self.R**2 + 2*pi*self.R*self.L
+
+    @property
+    def v_beam(self): return np.sqrt(2 * e * self.V_beam / self.m_i)
+
+    def flux_i(self, T_e, T_g, n_e, n_g):
+        return h_L(n_g, self.L) * n_e * u_B(T_e, self.m_i)
+
+    def thrust_i(self, T_e, T_g, n_e, n_g):
+        return self.flux_i(T_e, T_g, n_e, n_g) * self.m_i * self.v_beam * self.A_i
+
+    def j_i(self, T_e, T_g, n_e, n_g):
+        return self.flux_i(T_e, T_g, n_e, n_g) * e
+
+    def eval_property(self, func, y):
+        prop = np.zeros(y.shape[0])
+        for i in np.arange(y.shape[0]):
+            T_e = y[i][0]
+            T_g = y[i][1]
+            n_e = y[i][2]
+            n_g = y[i][3]
+            prop[i] = func(T_e, T_g, n_e, n_g)
+
+        return prop
 
     def P_loss(self, T_e, T_g, n_e, n_g):
         a = self.E_iz * n_e * n_g * self.K_iz(T_e)

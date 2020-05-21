@@ -2,8 +2,10 @@ from scipy.constants import e, k, pi
 
 config_dict = {
 
+        # Geometry
         'R': 6e-2,
         'L': 10e-2,
+        's': 1e-3,
         
         # Neutral flow
         'm_i': 2.18e-25,
@@ -13,6 +15,7 @@ config_dict = {
 
         # Ions
         'beta_i': 0.7,
+        'V_beam': 1000,
 
         # Electrical
         'omega': 13.56e6 * 2 * pi,

@@ -7,7 +7,7 @@ from config import config_dict
 if __name__ == "__main__":
     model = GlobalModel(config_dict)
 
-    # 2) Solve for several values of I_coil
+    # Solve for several values of I_coil
 
     I_coil = np.linspace(1, 40, 20)
     p, s = model.solve_for_I_coil(I_coil)
@@ -17,6 +17,15 @@ if __name__ == "__main__":
     n_e = s[:, 2]
     n_g = s[:, 3]
 
+
+    thrust = model.eval_property(model.thrust_i, s)
+    j_i = model.eval_property(model.j_i, s)
+    plt.ylim(0, 200)
+    plt.xlim(0, 1600)
+    plt.plot(p, j_i)
+    plt.show()
+
+    exit()
     # Temperature plot
 
     fig, ax1 = plt.subplots()
