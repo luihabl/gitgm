@@ -32,14 +32,16 @@ class GlobalModel:
 
     # vvvv This is the rate constant model described in the paper, to use just uncomment this and comment the interpolation functions
     # def K_el(self, T): 
-    #     return 1e-13
+    #     return 3e-13 * T / T
 
     # def K_ex(self, T):
-    #     return 1.2921e-13 * np.exp(- self.E_ex / (k * T))
+    #     T_eV = k * T / e
+    #     return 1.93e-19 * T_eV**(-0.5) * np.exp(- self.E_ex / (e * T_eV)) * np.sqrt(8 * e * T_eV / (pi * m_e))
     
     # def K_iz(self, T):
-    #     K_iz_1 = 6.73e-15 * np.sqrt(k * T / e) * (3.97 + (0.643 * k * T / e) - (0.0368 * (k * T / e)**2)) *  np.exp(- self.E_iz / (k * T))
-    #     K_iz_2 = 6.73e-15 * np.sqrt(k * T / e) * ((-0.0001031 * (k * T / e)**2) + (6.386 * np.exp(- self.E_iz / (k * T))))
+    #     T_eV = k * T / e
+    #     K_iz_1 = 1e-20 * ((3.97 + 0.643 * T_eV - 0.0368 * T_eV**2) * np.exp(- self.E_iz / (e * T_eV))) * np.sqrt(8 * e * T_eV / (pi * m_e))        
+    #     K_iz_2 = 1e-20 * (- 1.031e-4 * T_eV**2 + 6.386 * np.exp(- self.E_iz / (e * T_eV))) * np.sqrt(8 * e * T_eV / (pi * m_e))
     #     return 0.5 * (K_iz_1 + K_iz_2)
     # ^^^^
 
@@ -59,14 +61,11 @@ class GlobalModel:
         # Geometry
         self.R = 6e-2
         self.L = 10e-2
-        self.V = pi * self.R**2 * self.L # change this to property afterwards
-        self.A = 2*pi*self.R**2 + 2*pi*self.R*self.L # change this to property afterwards
-
+        
         # Neutral flow
         self.m_i = 2.18e-25
         self.Q_g = 1.2e19
         self.beta_g = 0.3
-        self.A_g = self.beta_g * pi * self.R**2
         self.kappa = 0.0057
 
         # Ions
@@ -85,6 +84,18 @@ class GlobalModel:
         self.n_g_0 = pressure(self.T_g_0, self.Q_g, 
                               maxwellian_flux_speed(self.T_g_0, self.m_i),
                               self.A_g) / (k * self.T_g_0)
+    
+    @property
+    def A_g(self): return self.beta_g * pi * self.R**2
+
+    @property
+    def A_i(self): return self.beta_i * pi * self.R**2
+
+    @property
+    def V(self): return pi * self.R**2 * self.L 
+
+    @property
+    def A(self): return 2*pi*self.R**2 + 2*pi*self.R*self.L
 
     def P_loss(self, T_e, T_g, n_e, n_g):
         a = self.E_iz * n_e * n_g * self.K_iz(T_e)
@@ -169,29 +180,9 @@ if __name__ == "__main__":
     
     model = GlobalModel()
 
-    # 1) Solve for a single I_coil
-
-    model.I_coil = 26.12
-    s = model.solve(0, 5e-2)
-
-    T_e = s.y[0][-1]
-    T_g = s.y[1][-1]
-    n_e = s.y[2][-1]
-    n_g = s.y[3][-1]
-
-    plt.plot(s.t, s.y[0] * k / e)
-    plt.ylabel('$T_e$ [eV]')
-    plt.xlabel('t [us]')
-    plt.show()
-
-    plt.plot(s.t, s.y[2])
-    plt.ylabel('$n_e$ [$m^{-3}$]')
-    plt.xlabel('t [us]')
-    plt.show()
-
     # 2) Solve for several values of I_coil
 
-    I_coil = np.linspace(1.5, 40, 20)
+    I_coil = np.linspace(1, 40, 20)
     p, s = model.solve_for_I_coil(I_coil)
 
     T_e = s[:, 0]
@@ -211,8 +202,8 @@ if __name__ == "__main__":
     ax1.set_ylabel('$T_g$ [K]', color='b')
 
     ax1.set_xlim((0, 1600))
-    ax2.set_ylim((2.6, 5.3))
-    ax1.set_ylim((255, 550))
+    ax2.set_ylim(((T_e * k / e).min(), 5.3))
+    ax1.set_ylim((255, 540))
 
     plt.show()
 
