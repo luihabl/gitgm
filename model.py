@@ -9,9 +9,9 @@ from aux import pressure, maxwellian_flux_speed, u_B, A_eff, A_eff_1, SIGMA_I, R
 
 class GlobalModel:
 
-    def __init__(self):
+    def __init__(self, config_dict):
         self.load_chemistry()
-        self.load_config()
+        self.load_config(config_dict)
 
     def load_chemistry(self):
         e_el, cs_el  = load_cross_section('cross-sections/Xe/Elastic_Xe.csv')
@@ -56,31 +56,31 @@ class GlobalModel:
             k_rate[i] = trapz(a*f, x=v)
         return k_rate
 
-    def load_config(self):
+    def load_config(self, config_dict):
 
         # Geometry
-        self.R = 6e-2
-        self.L = 10e-2
+        self.R = config_dict['R']
+        self.L = config_dict['L']
         
         # Neutral flow
-        self.m_i = 2.18e-25
-        self.Q_g = 1.2e19
-        self.beta_g = 0.3
-        self.kappa = 0.0057
+        self.m_i = config_dict['m_i']
+        self.Q_g = config_dict['Q_g']
+        self.beta_g = config_dict['beta_g']
+        self.kappa = config_dict['kappa']
 
         # Ions
-        self.beta_i = 0.7
+        self.beta_i = config_dict['beta_i']
 
         # Electrical
-        self.omega = 13.56e6 * 2 * pi
-        self.N = 5
-        self.R_coil = 2
-        self.I_coil = 26
+        self.omega = config_dict['omega']
+        self.N = config_dict['N']
+        self.R_coil = config_dict['R_coil']
+        self.I_coil = config_dict['I_coil']
 
         # Initial values
-        self.T_e_0 = 3 * e / k
-        self.n_e_0 = 1e18
-        self.T_g_0 = 300
+        self.T_e_0 = config_dict['T_e_0']
+        self.n_e_0 = config_dict['n_e_0']
+        self.T_g_0 = config_dict['T_g_0']
         self.n_g_0 = pressure(self.T_g_0, self.Q_g, 
                               maxwellian_flux_speed(self.T_g_0, self.m_i),
                               self.A_g) / (k * self.T_g_0)
@@ -174,45 +174,3 @@ class GlobalModel:
             solution[i] = np.array([T_e, T_g, n_e, n_g])
 
         return p, solution
-
-    
-if __name__ == "__main__":
-    
-    model = GlobalModel()
-
-    # 2) Solve for several values of I_coil
-
-    I_coil = np.linspace(1, 40, 20)
-    p, s = model.solve_for_I_coil(I_coil)
-
-    T_e = s[:, 0]
-    T_g = s[:, 1]
-    n_e = s[:, 2]
-    n_g = s[:, 3]
-
-    # Temperature plot
-
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    ax2.plot(p, T_e * k / e, 'g-')
-    ax1.plot(p, T_g, 'b-')
-
-    ax1.set_xlabel('$P_{RF}$ [W]')
-    ax2.set_ylabel('$T_e$ [eV]', color='g')
-    ax1.set_ylabel('$T_g$ [K]', color='b')
-
-    ax1.set_xlim((0, 1600))
-    ax2.set_ylim(((T_e * k / e).min(), 5.3))
-    ax1.set_ylim((255, 540))
-
-    plt.show()
-
-    # Density plot
-    plt.xlim((0, 1600))
-    plt.semilogy(p, n_e, label='$n_e$')
-    plt.semilogy(p, n_g, label='$n_g$')
-    plt.xlabel('n [$m^{-3}$]')
-    plt.xlabel('$P_{RF}$ [W]')
-    plt.legend()
-    plt.show()
-
