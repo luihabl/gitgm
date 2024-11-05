@@ -1,7 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from scipy.constants import m_e, e, pi, k, epsilon_0 as eps_0, mu_0 
-from scipy.integrate import trapz, solve_ivp, odeint
+from scipy.integrate import trapezoid, solve_ivp, odeint
 from scipy.interpolate import interp1d
 
 from util import load_csv, load_cross_section
@@ -53,7 +53,7 @@ class GlobalModel:
         for i in np.arange(n_temperature):
             a = (m / (2 * pi * e * T[i]))**(3/2) * 4 * pi
             f = cs * v**3 * np.exp(- m * v**2 / (2 * e * T[i])) 
-            k_rate[i] = trapz(a*f, x=v)
+            k_rate[i] = trapezoid(a*f, x=v)
         return k_rate
 
     def load_config(self, config_dict):
